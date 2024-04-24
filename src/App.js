@@ -6,15 +6,17 @@ import {buildProvider} from './vm/redux/api.js';
 import MainPage from "./gui/page/main/main.js";
 
 const Provider = buildProvider();
-const mainPage = (<Provider><MainPage /></Provider>)
+// const mainPage = (<Provider><MainPage /></Provider>)
 
 function App() {
   const router = (
-    <BrowserRouter>
-      <Routes>
-          <Route path="/" element={mainPage}/>
-      </Routes>
-    </BrowserRouter>
+    <Provider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<MainPage />}/>
+        </Routes>
+      </BrowserRouter>
+    </Provider>
 );
 return router;
 }

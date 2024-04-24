@@ -3,7 +3,7 @@ import {Response} from "./response.js";
 const protocol = "http";
 const host = "127.0.0.1";
 const port = "5000";
-const name = "todo_list-13842842538728320721.0-SNAPSHOT";
+const name = "";
 const domain = `${protocol}://${host}:${port}`;
 
 async function _sendRequest(type, uri, options, data) {//options для передачи header'ов
@@ -33,7 +33,7 @@ async function _sendRequest(type, uri, options, data) {//options для пере
     //прокидка реквеста и вытаскивание данных
     let response = await request;
     let json;
-    console.log("Response", await response.blob())
+    // console.log("Response", await response.blob())
     try {
         json = await response.json();
     } catch (error) {

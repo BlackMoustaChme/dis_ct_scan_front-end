@@ -2,10 +2,12 @@ import React, {useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import FileInput from '../../component/file-input/file-input'
 import Slider from "../../component/slider/slider";
+import StatusFields from "../../component/status-fields/status-fields";
 import * as nifti from 'nifti-reader-js'
 import { asyncGetStatus } from "../../../api/request";
 import { asyncGetResult } from "../../../api/request";
 import { asyncPostFile } from "../../../api/request";
+import { useProcessStudyDispatcher, useStudyIdListener, useStatusDispatcher, useStatusListener } from "../../../vm/redux/api";
 
 
 function MainPage() {
@@ -91,6 +93,7 @@ function MainPage() {
             for (var col = 0; col < cols; col++) {
                 var offset = sliceOffset + rowOffset + col;
                 var value = typedData[offset];
+                // console.log("cycle", offset, value)
 
                 /* 
                    Assumes data is 8-bit, otherwise you would need to first convert 
@@ -110,9 +113,10 @@ function MainPage() {
                 canvasImageData.data[(rowOffset + col) * 4 + 1] = value & 0xFF;
                 canvasImageData.data[(rowOffset + col) * 4 + 2] = value & 0xFF;
                 canvasImageData.data[(rowOffset + col) * 4 + 3] = 0xFF;
+
             }
         }
-
+        console.log("canvasImageData", canvasImageData)
         ctx.putImageData(canvasImageData, 0, 0);
     }
 
@@ -158,11 +162,11 @@ function MainPage() {
     }
 
     async function getHandle() {
-        asyncGetStatus("e2e5ecb9-3048-4721-a906-1c7898e7662b").then((value)=> console.log(value))
+        asyncGetResult("e2e5ecb9-3048-4721-a906-1c7898e7662b").then((value)=> console.log(value))
     }
 
     async function statusHandle() {
-        asyncGetResult("e2e5ecb9-3048-4721-a906-1c7898e7662b").then((value)=> console.log(value))
+        asyncGetStatus(studyId).then((value)=> console.log(value))
     }
 
     async function postHandle(event) {
@@ -170,21 +174,37 @@ function MainPage() {
         asyncPostFile(event.target).then((value)=> console.log(value))
     }
 
-console.log(nifti)
+    useEffect(() => {}, [])
+
+    const studyId = useStudyIdListener()
+
+    const processingStatus = useStatusListener()
+
+    const processStudy = useProcessStudyDispatcher()
+
+    const getStatus = useStatusDispatcher()
+
+console.log(studyId, processingStatus)
 
     return (
         <div>
-            <FileInput onChange={(event) => handleFileSelect(event)} onSubmit={(event) => postHandle(event)}></FileInput>
+            {/* <FileInput onChange={(event) => handleFileSelect(event)} onSubmit={(event) => postHandle(event)}></FileInput> */}
+            <FileInput onChange={(event) => handleFileSelect(event)} onSubmit={(event) => {
+                event.preventDefault()
+                processStudy(event.target)}}></FileInput>
             {/* <Slider></Slider> */}
-            <div><canvas id="myCanvas" width="128" height="128"></canvas></div>
+            <div><canvas id="myCanvas" width="512" height="512"></canvas></div>
             <div>
             <input type="range" min="1" max="100" defaultValue="50" class="slider" id="myRange"></input>
             </div>
             <div>
-                <button name="Status" onClick={statusHandle}></button>
+                {/* <button name="Status" onClick={statusHandle}>Status</button> */}
+                <button name="Status" onClick={getStatus}>Status</button>
+                <StatusFields numberOfLayers={processingStatus.numberOfLayers} numberOfLayersDone={processingStatus.numberOfLayersDone} 
+                completionPercentage={processingStatus.completionPercentage}></StatusFields>
             </div>
             <div>
-                <button name="Get" onClick={getHandle}></button>
+                <button name="Get" onClick={getHandle}>Result</button>
             </div>
         </div>
 
