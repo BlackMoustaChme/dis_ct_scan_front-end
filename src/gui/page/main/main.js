@@ -2,6 +2,7 @@ import React, {useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import FileInput from '../../component/file-input/file-input'
 import Slider from "../../component/slider/slider";
+import Plot from "../../component/plot/plot";
 import StatusFields from "../../component/status-fields/status-fields";
 import * as nifti from 'nifti-reader-js'
 import { asyncGetStatus } from "../../../api/request";
@@ -12,10 +13,11 @@ import { useProcessStudyDispatcher, useStudyIdListener, useStatusDispatcher, use
 
 function MainPage() {
     function readNIFTI(name, data) {
-        var canvas = document.getElementById('myCanvas');
+        // var canvas = document.getElementById('myCanvas');
         var slider = document.getElementById('myRange');
+        var plot = document.getElementById('myPlot')
         var niftiHeader, niftiImage;
-        console.log(canvas.height)
+        console.log(plot)
 
         // parse nifti
         console.log(nifti);
@@ -37,17 +39,20 @@ function MainPage() {
         slider.max = slices - 1;
         slider.value = Math.round(slices / 2);
         slider.oninput = function() {
-            drawCanvas(canvas, slider.value, niftiHeader, niftiImage);
+            // drawCanvas(canvas, slider.value, niftiHeader, niftiImage);
+            drawCanvas(plot, slider.value, niftiHeader, niftiImage);
         };
 
         // // draw slice
-        drawCanvas(canvas, slider.value, niftiHeader, niftiImage);
+        // drawCanvas(canvas, slider.value, niftiHeader, niftiImage);
+        drawCanvas(plot, slider.value, niftiHeader, niftiImage);
     }
 
     function drawCanvas(canvas, slice, niftiHeader, niftiImage) {
         // get nifti dimensions
         var cols = niftiHeader.dims[1];
         var rows = niftiHeader.dims[2];
+        console.log(canvas)
 
         // set canvas dimensions to nifti slice dimensions
         canvas.width = cols;
@@ -165,13 +170,8 @@ function MainPage() {
         asyncGetResult("e2e5ecb9-3048-4721-a906-1c7898e7662b").then((value)=> console.log(value))
     }
 
-    async function statusHandle() {
-        asyncGetStatus(studyId).then((value)=> console.log(value))
-    }
-
-    async function postHandle(event) {
-        event.preventDefault()
-        asyncPostFile(event.target).then((value)=> console.log(value))
+    function loadHandle(evt) {
+        console.log(evt)
     }
 
     useEffect(() => {}, [])
@@ -192,10 +192,13 @@ console.log(studyId, processingStatus)
             <FileInput onChange={(event) => handleFileSelect(event)} onSubmit={(event) => {
                 event.preventDefault()
                 processStudy(event.target)}}></FileInput>
-            {/* <Slider></Slider> */}
-            <div><canvas id="myCanvas" width="512" height="512"></canvas></div>
+            {/* <div><canvas id="myCanvas" width="512" height="512"></canvas></div> */}
             <div>
-            <input type="range" min="1" max="100" defaultValue="50" class="slider" id="myRange"></input>
+                <Plot onChange={(event) => loadHandle(event)} width="128" height="128" id="myPlot"></Plot>
+            </div>
+            <div>
+                <Slider min="1" max="100" defaultValue="50" id="myRange"></Slider>
+            {/* <input type="range" min="1" max="100" defaultValue="50" class="slider" id="myRange"></input> */}
             </div>
             <div>
                 {/* <button name="Status" onClick={statusHandle}>Status</button> */}

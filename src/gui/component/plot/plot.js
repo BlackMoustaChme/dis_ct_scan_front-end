@@ -3,7 +3,7 @@ import React from "react";
 function Plot({width, height, ...props}) {
 
     return(
-        <canvas></canvas>
+        <canvas {...props} width={width} height={height} ></canvas>
     )
 }
 
