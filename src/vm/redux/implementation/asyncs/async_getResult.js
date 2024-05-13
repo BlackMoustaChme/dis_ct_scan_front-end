@@ -6,6 +6,13 @@ function async_getResult() {
         (async () => {
             let id = getState().id
             studyService.getResult(id)
+            .then((value) => {
+                if(value !== null)
+                dispatch(ACTIONS_CREATORS.GET_RESULT(value))
+            })
+            .catch(() => {
+                console.log("CATCH")
+            })
         })();
     }
 }

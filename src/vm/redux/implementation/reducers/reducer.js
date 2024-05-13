@@ -5,9 +5,11 @@ const initialState = {
     ids: [],
     studies: [],
     masks: [],
-    maxSliderValue: 100,
-    minSliderValue: 0,
-    sliderValue: 50,
+    slider: {    
+        maxSliderValue: 100,
+        minSliderValue: 0,
+        sliderValue: 50
+    },
     plotWidth: 128,
     plotHeight: 128,
     processingStatus: {
@@ -35,6 +37,11 @@ const reducer = (state = initialState, action) => {
                 ...action.payload
             }
         case ACTIONS_TYPES.INSTATE_ID:
+            return {
+                ...state,
+                ...action.payload
+            }
+        case ACTIONS_TYPES.FILE_UPLOAD:
             return {
                 ...state,
                 ...action.payload

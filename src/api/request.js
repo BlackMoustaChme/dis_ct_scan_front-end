@@ -20,10 +20,10 @@ async function _sendRequest(type, uri, options, data) {//options для пере
         }
     }
 
-    if (data == null || data == undefined) {
+    if (data === null || data === undefined) {
         console.log(headers, "DATA UNDEFINED");
         request = fetch(uri, {method: type, headers: headers});
-    } else if (type == "delete" || type == "get") {
+    } else if (type === "delete" || type === "get") {
         console.log("TYPE DELETE OR GET")
         headers["Data"] = JSON.stringify(data);//для данных в header'ах
         request = fetch(uri, {method: type, headers: headers});
@@ -32,15 +32,42 @@ async function _sendRequest(type, uri, options, data) {//options для пере
     }
     //прокидка реквеста и вытаскивание данных
     let response = await request;
-    let json;
-    // console.log("Response", await response.blob())
+    let body
+    let json
+    let blob
+
     try {
-        json = await response.json();
-    } catch (error) {
-        json = null;
+        json = await response.clone()
+        console.log(json)
+        blob = await response.clone()
+        console.log(blob)
+    } catch (e) {
+        console.log(e)
+        json = null
+        blob = null
     }
 
-    return new Response(response.status, json); //Response это ДТО объект
+    try {
+        json = await json.json()
+    } catch (e) {
+        console.log(e)
+        json = null
+    }
+
+    try {
+        blob = await blob.blob()
+    } catch (e) {
+        console.log(e)
+        blob = null
+    }
+
+    if (json === null) {
+        body = blob
+    } else {
+        body = json
+    }
+
+    return new Response(response.status, body); //Response это ДТО объект
 }
 
 export async function asyncPostFile(data) {

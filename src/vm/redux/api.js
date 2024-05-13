@@ -6,6 +6,8 @@ import store from './implementation/store.js';
 import { async_getResult } from './implementation/asyncs/async_getResult.js';
 import { async_getStatus } from './implementation/asyncs/async_getStatus.js';
 import { async_postStudy } from './implementation/asyncs/async_postStudy.js';
+import { ACTIONS_CREATORS } from './implementation/actions/actions.js';
+import { async_fileUpload } from './implementation/asyncs/async_fileUpload.js';
 //***************************************************************
 
 function buildProvider() {
@@ -41,4 +43,23 @@ function useProcessStudyDispatcher() {
     const dispatch = useDispatch()
     return (formData) => dispatch(async_postStudy(formData))
 }
-export {buildProvider, useStudyIdListener, useStudyIdDispatcher, useStatusListener, useStatusDispatcher, useProcessStudyDispatcher}
+
+function useResultListener() {
+    
+}
+
+function useResultDispatcher() {
+    const dispatch = useDispatch()
+    return () => dispatch(async_getResult())
+}
+
+function useSliderValuesListener() {
+    return useSelector((state) => state.slider)
+}
+
+function useFileUploadDispatcher() {
+    const dispatch = useDispatch()
+    return (file) => dispatch(async_fileUpload(file))
+}
+export {buildProvider, useStudyIdListener, useStudyIdDispatcher, useStatusListener, useStatusDispatcher, useProcessStudyDispatcher, useResultDispatcher,
+useSliderValuesListener, useFileUploadDispatcher}

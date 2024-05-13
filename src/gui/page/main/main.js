@@ -8,7 +8,8 @@ import * as nifti from 'nifti-reader-js'
 import { asyncGetStatus } from "../../../api/request";
 import { asyncGetResult } from "../../../api/request";
 import { asyncPostFile } from "../../../api/request";
-import { useProcessStudyDispatcher, useStudyIdListener, useStatusDispatcher, useStatusListener } from "../../../vm/redux/api";
+import { useProcessStudyDispatcher, useStudyIdListener, useStatusDispatcher, useStatusListener, useResultDispatcher,
+useFileUploadDispatcher, useSliderValuesListener } from "../../../vm/redux/api";
 
 
 function MainPage() {
@@ -17,7 +18,7 @@ function MainPage() {
         var slider = document.getElementById('myRange');
         var plot = document.getElementById('myPlot')
         var niftiHeader, niftiImage;
-        console.log(plot)
+        console.log(data)
 
         // parse nifti
         console.log(nifti);
@@ -29,7 +30,6 @@ function MainPage() {
             niftiHeader = nifti.readHeader(data);
             niftiImage = nifti.readImage(niftiHeader, data);
         }
-        
 
         // set up slider
         var slices = niftiHeader.dims[3];
@@ -47,12 +47,11 @@ function MainPage() {
         // drawCanvas(canvas, slider.value, niftiHeader, niftiImage);
         drawCanvas(plot, slider.value, niftiHeader, niftiImage);
     }
-
+// Отображение
     function drawCanvas(canvas, slice, niftiHeader, niftiImage) {
         // get nifti dimensions
         var cols = niftiHeader.dims[1];
         var rows = niftiHeader.dims[2];
-        console.log(canvas)
 
         // set canvas dimensions to nifti slice dimensions
         canvas.width = cols;
@@ -85,7 +84,7 @@ function MainPage() {
             return;
         }
 
-        console.log(typedData)
+        // console.log(typedData)
 
         // offset to specified slice
         var sliceSize = cols * rows;
@@ -114,9 +113,10 @@ function MainPage() {
                        to apply transform to the canvas
                      - byte order: see littleEndian flag
                 */
-                canvasImageData.data[(rowOffset + col) * 4] = value & 0xFF;
-                canvasImageData.data[(rowOffset + col) * 4 + 1] = value & 0xFF;
-                canvasImageData.data[(rowOffset + col) * 4 + 2] = value & 0xFF;
+            //    console.log(value & 0xFF)
+                canvasImageData.data[(rowOffset + col) * 4] = value ;
+                canvasImageData.data[(rowOffset + col) * 4 + 1] = value ;
+                canvasImageData.data[(rowOffset + col) * 4 + 2] = value ;
                 canvasImageData.data[(rowOffset + col) * 4 + 3] = 0xFF;
 
             }
@@ -127,6 +127,8 @@ function MainPage() {
 
     function makeSlice(file, start, length) {
         var fileType = (typeof File);
+
+        console.log(fileType)
 
         if (fileType === 'undefined') {
             return function () {};
@@ -149,7 +151,7 @@ function MainPage() {
 
     function readFile(file) {
         var blob = makeSlice(file, 0, file.size);
-
+        console.log(file)
         var reader = new FileReader();
 
         reader.onloadend = function (evt) {
@@ -166,48 +168,42 @@ function MainPage() {
         readFile(files[0]);
     }
 
-    async function getHandle() {
-        asyncGetResult("e2e5ecb9-3048-4721-a906-1c7898e7662b").then((value)=> console.log(value))
-    }
-
-    function loadHandle(evt) {
-        console.log(evt)
-    }
-
     useEffect(() => {}, [])
 
     const studyId = useStudyIdListener()
 
     const processingStatus = useStatusListener()
 
+    const slider = useSliderValuesListener()
+
     const processStudy = useProcessStudyDispatcher()
 
     const getStatus = useStatusDispatcher()
 
-console.log(studyId, processingStatus)
+    const getResult = useResultDispatcher()
+
+    const fileUpload = useFileUploadDispatcher()
+
+console.log(studyId, processingStatus, slider)
 
     return (
         <div>
-            {/* <FileInput onChange={(event) => handleFileSelect(event)} onSubmit={(event) => postHandle(event)}></FileInput> */}
-            <FileInput onChange={(event) => handleFileSelect(event)} onSubmit={(event) => {
+            <FileInput onChange={(event) => {handleFileSelect(event); fileUpload(event.target.files[0])}} onSubmit={(event) => {
                 event.preventDefault()
                 processStudy(event.target)}}></FileInput>
-            {/* <div><canvas id="myCanvas" width="512" height="512"></canvas></div> */}
             <div>
-                <Plot onChange={(event) => loadHandle(event)} width="128" height="128" id="myPlot"></Plot>
+                <Plot width="128" height="128" id="myPlot"></Plot>
             </div>
             <div>
                 <Slider min="1" max="100" defaultValue="50" id="myRange"></Slider>
-            {/* <input type="range" min="1" max="100" defaultValue="50" class="slider" id="myRange"></input> */}
             </div>
             <div>
-                {/* <button name="Status" onClick={statusHandle}>Status</button> */}
                 <button name="Status" onClick={getStatus}>Status</button>
                 <StatusFields numberOfLayers={processingStatus.numberOfLayers} numberOfLayersDone={processingStatus.numberOfLayersDone} 
                 completionPercentage={processingStatus.completionPercentage}></StatusFields>
             </div>
             <div>
-                <button name="Get" onClick={getHandle}>Result</button>
+                <button name="Get" onClick={getResult}>Result</button>
             </div>
         </div>
 
