@@ -4,6 +4,7 @@ import { studyService } from '../../../../model/studyService.js';
 function async_fileUpload(file) {
     return (dispatch, getState) => {
         (async () => {
+            console.log(file.name)
             studyService.readFile(file, (result) => {
                 dispatch(ACTIONS_CREATORS.FILE_UPLOAD(result))
             })

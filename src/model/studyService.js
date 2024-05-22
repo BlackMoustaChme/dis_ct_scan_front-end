@@ -57,6 +57,7 @@ function _readNIFTI(name, data) {
 
     let fileInfo = {
         slider: slider,
+        name: name,
         header: niftiHeader,
         image: niftiImage
     }

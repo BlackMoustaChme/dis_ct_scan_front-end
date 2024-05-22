@@ -8,6 +8,8 @@ import { async_getStatus } from './implementation/asyncs/async_getStatus.js';
 import { async_postStudy } from './implementation/asyncs/async_postStudy.js';
 import { ACTIONS_CREATORS } from './implementation/actions/actions.js';
 import { async_fileUpload } from './implementation/asyncs/async_fileUpload.js';
+import async_canvasDrawing from './implementation/asyncs/async_canvasDrawing.js';
+import async_sliderMovement from './implementation/asyncs/async_sliderMovement.js';
 //***************************************************************
 
 function buildProvider() {
@@ -24,6 +26,10 @@ function buildProvider() {
 
 function useStudyIdListener() {
     return useSelector((state) => state.id)
+}
+
+function useStudiesIdListener() {
+    return useSelector((state) => state.ids)
 }
 
 function useStudyIdDispatcher() {
@@ -57,9 +63,37 @@ function useSliderValuesListener() {
     return useSelector((state) => state.slider)
 }
 
+function useFileUploadedListener() {
+    return useSelector((state) => state.fileUploaded)
+}
+
 function useFileUploadDispatcher() {
     const dispatch = useDispatch()
     return (file) => dispatch(async_fileUpload(file))
 }
+
+function useStudyListener() {
+    return useSelector((state) => state.study)
+}
+
+function useStudiesListener() {
+    return useSelector((state) => state.studies)
+}
+
+function useImageListener() {
+    return useSelector((state) => state.imageData)
+}
+
+function useImageDispatcher() {
+    const dispatch = useDispatch()
+    return (canvas) => dispatch(async_canvasDrawing(canvas))
+}
+
+function useSliderMovementDispatcher() {
+    const dispatch = useDispatch()
+    return (canvas, value) => dispatch(async_sliderMovement(canvas, value))
+}
+
 export {buildProvider, useStudyIdListener, useStudyIdDispatcher, useStatusListener, useStatusDispatcher, useProcessStudyDispatcher, useResultDispatcher,
-useSliderValuesListener, useFileUploadDispatcher}
+useSliderValuesListener, useFileUploadDispatcher, useFileUploadedListener, useImageListener, useImageDispatcher, useStudyListener, useSliderMovementDispatcher,
+useStudiesListener, useStudiesIdListener}

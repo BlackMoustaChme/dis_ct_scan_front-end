@@ -5,13 +5,13 @@ function StatusFields({numberOfLayers, numberOfLayersDone, completionPercentage,
     return(
         <div>
             <div>
-                <span>{numberOfLayers}</span>
+                <span>Количество слоёв изображения: {numberOfLayers}</span>
             </div>
             <div>
-                <span>{numberOfLayersDone}</span>
+                <span>Количество обработанных слоёв изображения: {numberOfLayersDone}</span>
             </div>
             <div>
-                <span>{completionPercentage}</span>
+                <span>Процент выполнения: {completionPercentage}</span>
             </div>
         </div>
     )

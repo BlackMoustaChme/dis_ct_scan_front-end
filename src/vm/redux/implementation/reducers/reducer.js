@@ -1,4 +1,5 @@
 import { ACTIONS_TYPES } from "../actions/actions"
+import { imageService } from "../../../../model/imageService"
 
 const initialState = {
     id: '',
@@ -7,7 +8,6 @@ const initialState = {
     masks: [],
     slider: {    
         maxSliderValue: 100,
-        minSliderValue: 0,
         sliderValue: 50
     },
     plotWidth: 128,
@@ -17,6 +17,10 @@ const initialState = {
         numberOfLayersDone: 0,
         completionPercentage: 0
     },
+    study: {},
+    mask: {},
+    imageData: [],
+    fileUploaded: false,
 
 }
 const reducer = (state = initialState, action) => {
@@ -37,11 +41,24 @@ const reducer = (state = initialState, action) => {
                 ...action.payload
             }
         case ACTIONS_TYPES.INSTATE_ID:
+            state.ids.push(action.payload.id)
             return {
                 ...state,
                 ...action.payload
             }
         case ACTIONS_TYPES.FILE_UPLOAD:
+            console.log(state.studies, action.payload.study)
+            state.studies.push(action.payload.study)
+            return {
+                ...state,
+                ...action.payload
+            }
+        case ACTIONS_TYPES.CANVAS_DRAWING:
+            return {
+                ...state,
+                ...action.payload
+            }
+        case ACTIONS_TYPES.SLIDER_MOVEMENT:
             return {
                 ...state,
                 ...action.payload
