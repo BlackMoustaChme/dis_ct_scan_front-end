@@ -1,7 +1,10 @@
 import { asyncGetResult } from "../api/request";
 import { asyncGetStatus } from "../api/request";
 import { asyncPostFile } from "../api/request";
+import { serverSentEvents } from "../api/server_sent_events";
 import * as nifti from 'nifti-reader-js'
+import * as fflate from 'fflate'
+import { userService } from "./userService";
 
 function _makeSlice(file, start, length) {
     var fileType = (typeof File);
@@ -26,15 +29,12 @@ function _makeSlice(file, start, length) {
 }
 
 function _readNIFTI(name, data) {
-    // var canvas = document.getElementById('myCanvas');
-    // var slider = document.getElementById('myRange');
-    // var plot = document.getElementById('myPlot')
     var niftiHeader, niftiImage;
     console.log(data)
 
     // parse nifti
     if (nifti.isCompressed(data)) {
-        data = nifti.decompress(data);
+        data = fflate.decompressSync(new Uint8Array(data)).buffer
     }
 
     if (nifti.isNIFTI(data)) {
@@ -55,24 +55,62 @@ function _readNIFTI(name, data) {
         sliderValue: value
     }
 
+    console.log(niftiHeader)
+
+    var typedData;
+
+    if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_UINT8) {
+        typedData = new Uint8Array(niftiImage);
+    } else if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_INT16) {
+        typedData = new Int16Array(niftiImage);
+    } else if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_INT32) {
+        typedData = new Int32Array(niftiImage);
+    } else if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_FLOAT32) {
+        typedData = new Float32Array(niftiImage);
+    } else if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_FLOAT64) {
+        typedData = new Float64Array(niftiImage);
+    } else if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_INT8) {
+        typedData = new Int8Array(niftiImage);
+    } else if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_UINT16) {
+        typedData = new Uint16Array(niftiImage);
+    } else if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_UINT32) {
+        typedData = new Uint32Array(niftiImage);
+    } else {
+        return;
+    }
+
+    const window_center = -600
+    const window_width = 1200
+
+    let typedDataProcessed = []
+
+    for (var i = 0; i < typedData.length; i++) {
+        typedDataProcessed[i] = (typedData[i] - (window_center - window_width / 2)) / window_width * 255
+        if (typedDataProcessed[i] < 0) {
+            typedDataProcessed[i] = 0
+        } 
+        else if (typedDataProcessed[i] > 255) {
+            typedDataProcessed[i] = 255
+        } 
+    }
+
+    niftiImage = new Uint8Array(typedDataProcessed)
+
+    console.log(name.split('.')[0])
+
     let fileInfo = {
         slider: slider,
         name: name,
         header: niftiHeader,
         image: niftiImage
     }
-    // slider.oninput = function() {
-        // drawCanvas(canvas, slider.value, niftiHeader, niftiImage);
-        // drawCanvas(plot, slider.value, niftiHeader, niftiImage);
-    // };
 
-    // // draw slice
-    // drawCanvas(canvas, slider.value, niftiHeader, niftiImage);
-    // drawCanvas(plot, slider.value, niftiHeader, niftiImage);
     return fileInfo
 }
 
 export const studyService = {
+
+    sseConnectionsMap: new Map(),
 
     readFile(file, callback) {
         var blob = _makeSlice(file, 0, file.size);
@@ -88,11 +126,25 @@ export const studyService = {
     },
 
     async postStudy(data) {
-        let response = await asyncPostFile(data)
+        let response = await asyncPostFile(data, userService.getToken())
+        let answer = {
+            value: null,
+            message: null
+        }
         switch (response.getStatus()) {
             case 200:
-                return response.getBody()
-            case 400:
+                console.log(response.getBody())
+                answer.value = response.getBody().data.file_hash
+                answer.message = response.getBody().description
+                console.log(answer)
+                return answer
+                // return response.getBody()
+            case 401:
+                console.log(response.getBody())
+                answer.value = response.getBody().data.file_hash
+                answer.message = response.getBody().description
+                return answer
+            case 422:
                 console.log(response.getBody())
                 return null
             default:
@@ -102,10 +154,17 @@ export const studyService = {
 
     async getResult(id) {
         let response = await asyncGetResult(id)
+        let bodyInfo = null
         switch (response.getStatus()) {
             case 200:
-                return response.getBody()
-            case 400:
+                console.log(response.getBody())
+                bodyInfo = response.getBody()
+                let data = JSON.parse(bodyInfo.data)
+                console.log(data.masks_data)
+                let maskData = data.masks_data
+                return maskData
+            case 422:
+                console.log(response.getBody())
                 return response.getBody()
             default:
                 return Promise.reject()
@@ -116,13 +175,32 @@ export const studyService = {
         let response = await asyncGetStatus(id)
         switch (response.getStatus()) {
             case 200:
+                console.log(response.getBody())
                 return response.getBody()
-            case 400:
+            case 422:
+                console.log(response.getBody())
                 return response.getBody()
             default:
                 return Promise.reject()
         }
     },
+
+    initializeStatusSSE(id) {
+        // console.log("status step 2")
+        let statusSrc = serverSentEvents.studyStatusSource(id)
+        this.sseConnectionsMap.set(id, statusSrc)
+    },
+
+    getStatusSSE(id, callback) {
+        // console.log("status step 5")
+        serverSentEvents.SSEReceive(this.sseConnectionsMap.get(id), callback)
+    },
+
+    closeStatusSSE(id) {
+        // console.log("status step 8",this.sseConnectionsMap)
+        serverSentEvents.SSEClose(this.sseConnectionsMap.get(id))
+        this.sseConnectionsMap.delete(id)
+    }
 
 
 }

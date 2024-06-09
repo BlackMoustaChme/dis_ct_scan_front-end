@@ -1,9 +1,12 @@
 import React from "react";
 
-function Plot({width, height, ...props}) {
+function Plot({title, width, height, ...props}) {
 
     return(
-        <canvas {...props} width={width} height={height} ></canvas>
+        <>
+        <div>{title}</div>
+        <canvas {...props} width={width} height={height} onMouse></canvas>
+        </>
     )
 }
 

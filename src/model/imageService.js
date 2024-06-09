@@ -7,6 +7,7 @@ export const imageService = {
         // niftiHeader - can be obtained through .getState() ?? or that value is constant
         // niftiImage - can be obtained through .getState() ?? or that value is constant
         // get nifti dimensions
+        // console.log(canvas)
         var cols = niftiHeader.dims[1];
         var rows = niftiHeader.dims[2];
 
@@ -17,30 +18,10 @@ export const imageService = {
         // make canvas image data
         var ctx = canvas.getContext("2d");
         var canvasImageData = ctx.createImageData(canvas.width, canvas.height);
-
+        // console.log(niftiImage)
         // convert raw data to typed array based on nifti datatype
-        var typedData;
 
-        if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_UINT8) {
-            typedData = new Uint8Array(niftiImage);
-        } else if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_INT16) {
-            typedData = new Int16Array(niftiImage);
-        } else if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_INT32) {
-            typedData = new Int32Array(niftiImage);
-        } else if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_FLOAT32) {
-            typedData = new Float32Array(niftiImage);
-        } else if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_FLOAT64) {
-            typedData = new Float64Array(niftiImage);
-        } else if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_INT8) {
-            typedData = new Int8Array(niftiImage);
-        } else if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_UINT16) {
-            typedData = new Uint16Array(niftiImage);
-        } else if (niftiHeader.datatypeCode === nifti.NIFTI1.TYPE_UINT32) {
-            typedData = new Uint32Array(niftiImage);
-        } else {
-            return;
-        }
-
+        console.log("Mask False")
         // console.log(typedData)
 
         // offset to specified slice
@@ -53,7 +34,8 @@ export const imageService = {
 
             for (var col = 0; col < cols; col++) {
                 var offset = sliceOffset + rowOffset + col;
-                var value = typedData[offset];
+                // var value = typedData[offset];
+                var value = niftiImage[offset];
                 // console.log("cycle", offset, value)
 
                 /* 
@@ -79,6 +61,83 @@ export const imageService = {
             }
         }
         console.log("canvasImageData", canvasImageData)
+        console.log("canvasImageData.data",canvasImageData.data)
+        ctx.putImageData(canvasImageData, 0, 0);
+        return canvasImageData
+    },
+
+    drawMaskedCanvas(canvas, slice, niftiHeader, niftiImage, masksData) {
+              // canvas - is sent here by view 
+        // slice - can be obtained through .getState()
+        // niftiHeader - can be obtained through .getState() ?? or that value is constant
+        // niftiImage - can be obtained through .getState() ?? or that value is constant
+        // get nifti dimensions
+        // console.log(canvas)
+        var cols = niftiHeader.dims[1];
+        var rows = niftiHeader.dims[2];
+
+        // set canvas dimensions to nifti slice dimensions
+        canvas.width = cols;
+        canvas.height = rows;
+
+        // make canvas image data
+        var ctx = canvas.getContext("2d");
+        var canvasImageData = ctx.createImageData(canvas.width, canvas.height);
+        // console.log(niftiImage)
+        // convert raw data to typed array based on nifti datatype
+        let maskFlag = false
+        let maskData = null
+        let slice_int = parseInt(slice)
+        // console.log("Mask True")
+        console.log(masksData[0].slice_idx, slice)
+        for (var i = 0; i < 20; i++) {
+          // console.log(masksData[i].data, masksData[i].slice_idx)
+          if (slice_int === masksData[i].slice_idx) {
+            console.log("Mask True")
+            maskFlag = true
+            maskData = masksData[i].data
+          }
+        }
+
+        // offset to specified slice
+        var sliceSize = cols * rows;
+        var sliceOffset = sliceSize * slice;
+        // draw pixels
+        for (var row = 0; row < rows; row++) {
+            var rowOffset = row * cols;
+
+            for (var col = 0; col < cols; col++) {
+                var offset = sliceOffset + rowOffset + col;
+                // var value = typedData[offset];
+                var value = niftiImage[offset];
+                if (maskFlag) {
+                  // var value1 = maskData[offset];
+                  
+                  if (maskData[col][row] !== 0) {
+                    // console.log(maskData, maskData[offset], value)
+                    canvasImageData.data[(rowOffset + col) * 4] = value;
+                    canvasImageData.data[(rowOffset + col) * 4 + 1] = 0;
+                    canvasImageData.data[(rowOffset + col) * 4 + 2] = 0;
+                    canvasImageData.data[(rowOffset + col) * 4 + 3] = 0xFF;
+                  }
+                  else {
+                    canvasImageData.data[(rowOffset + col) * 4] = value ;
+                    canvasImageData.data[(rowOffset + col) * 4 + 1] = value ;
+                    canvasImageData.data[(rowOffset + col) * 4 + 2] = value ;
+                    canvasImageData.data[(rowOffset + col) * 4 + 3] = 0xFF;
+                  }
+                } else {
+                  canvasImageData.data[(rowOffset + col) * 4] = value ;
+                  canvasImageData.data[(rowOffset + col) * 4 + 1] = value ;
+                  canvasImageData.data[(rowOffset + col) * 4 + 2] = value ;
+                  canvasImageData.data[(rowOffset + col) * 4 + 3] = 0xFF;
+                }
+
+
+            }
+        }
+        // console.log("canvasImageData", canvasImageData)
+        // console.log("canvasImageData.data",canvasImageData.data[])
         ctx.putImageData(canvasImageData, 0, 0);
         return canvasImageData
     }

@@ -13,8 +13,18 @@ import { useProcessStudyDispatcher, useStudyIdListener, useStatusDispatcher, use
 useFileUploadDispatcher, useSliderValuesListener, useImageDispatcher, useImageListener, useStudyListener,
 useFileUploadedListener, useSliderMovementDispatcher,
 useStudiesListener,
-useStudiesIdListener} from "../../../vm/redux/api";
+useStudiesIdListener,
+useSelectedStudyDispatcher,
+useIsHistoryPresentListener,
+useIsAuthorizedListener,
+useLogoutDispatcher,
+useStudyPostedListener,
+useSliderMovementDispatcher2,
+useStudyPostMessageListener} from "../../../vm/redux/api";
 import Tile from "../../composition/tile/tile";
+import { probe } from "../../../api/server_sent_events";
+import { userService } from "../../../model/userService";
+
 
 
 function MainPage() {
@@ -23,19 +33,24 @@ function MainPage() {
 
     const navigate = useNavigate();
 
-    const canvas = document.getElementById('myPlot')
-
     const fileUploaded = useFileUploadedListener()
 
-    const canvasDrawing = useImageDispatcher()
+    const studyPosted = useStudyPostedListener()
+
+    const idInstance = useStudyIdListener()
 
     const imageData = useImageListener()
 
+    const isAuth = useIsAuthorizedListener()
+
     useEffect(() => {
-        if (fileUploaded === true) {
-            canvasDrawing(canvas)
+        if(!isAuth) {
+            navigate('/authorization');
         }
-    }, [fileUploaded, canvasDrawing, canvas])
+        // if(studyPosted) {
+        //     getStatus(idInstance);
+        // }
+    }, [isAuth, navigate])
 
     const study = useStudyListener()
 
@@ -45,11 +60,15 @@ function MainPage() {
 
     const studiesId = useStudiesIdListener()
 
-    const processingStatus = useStatusListener()
+    const processStatus = useStatusListener()
 
-    const slider = useSliderValuesListener()
+    // const slider = useSliderValuesListener()
 
-    const sliderMovementDispatcher = useSliderMovementDispatcher()
+    const isHistoryPresent = useIsHistoryPresentListener()
+
+    const studyPostMessage = useStudyPostMessageListener()
+
+    // const sliderMovementDispatcher = useSliderMovementDispatcher2()
 
     const processStudy = useProcessStudyDispatcher()
 
@@ -59,37 +78,36 @@ function MainPage() {
 
     const fileUpload = useFileUploadDispatcher()
 
+    const studySelect = useSelectedStudyDispatcher()
+
+    const logout = useLogoutDispatcher()
+
     const TileMas = []
 
-    studies.map((value) => TileMas.push(<Tile fileName={value.name} onDblClick={() => {navigate("/view")}}></Tile>))
+    studies.map((value) => TileMas.push(<Tile id={value.id} fileName={value.name} onStatusButton={() => {getStatus(value.id)}} OnResultButton={() => getResult(value.id)} 
+    onDblClick={() => { studySelect(value.id) ; navigate("/view")}} 
+    numberOfLayers={value.slider.maxSliderValue} processStatus={value.processStatus}></Tile>))
 
-console.log(studyId, processingStatus, slider, study, studies, imageData, canvas)
+console.log(studyId, processStatus, study, studies, imageData, studiesId)
 
     return (
         <div>
+            <button onClick={() => logout()}>Log out</button>
+            {isHistoryPresent === true && <button onClick={()=>navigate("/history")}>History Page</button>}
             <FileInput onChange={(event) => { fileUpload(event.target.files[0])}} onSubmit={(event) => {
                 event.preventDefault()
                 processStudy(event.target)}}></FileInput>
             <div>
-                <Plot width="128" height="128" id="myPlot"></Plot>
-                {/* <Plot id="myPloter"></Plot> */}
-            </div>
-            <div>
-                <Slider min="1" max={slider.maxSliderValue} value={slider.sliderValue} onChange={(event) => sliderMovementDispatcher(canvas, event.target.value)} 
-                id="myRange"></Slider>
-            </div>
-            <div>
-                <button name="Status" onClick={getStatus}>Status</button>
-                <StatusFields numberOfLayers={processingStatus.numberOfLayers} numberOfLayersDone={processingStatus.numberOfLayersDone} 
-                completionPercentage={processingStatus.completionPercentage}></StatusFields>
-            </div>
-            <div>
-                <button name="Get" onClick={getResult}>Result</button>
-            </div>
-            <div>
-                {/* <Tile id={studiesId[0]}  onDblClick={() => {navigate("/view")}}></Tile> */}
+                <span>{studyPostMessage}</span>
                 <Column value={TileMas}></Column>
             </div>
+            <button onClick={()=> localStorage.clear()}>Clear History</button>
+            {/* <button onClick={()=> userService.userInfo()}>userInfo</button> */}
+            {/* <span>{processStatus}</span> */}
+            {/* <Slider min="1" max={slider.maxSliderValue} value={slider.sliderValue} 
+                onChange={(event) => {sliderMovementDispatcher(event.target.value)
+            }}  
+                id="studyPlotRange"></Slider> */}
         </div>
     )
 }
